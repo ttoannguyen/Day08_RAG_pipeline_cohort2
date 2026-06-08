@@ -170,8 +170,30 @@ run_dashboard()
 
 ## Kiến Trúc Hệ Thống
 
-```
-[Vẽ diagram kiến trúc ở đây]
+```mermaid
+graph TD
+    User([User Query]) --> Streamlit[Streamlit Chatbot app.py]
+    Streamlit --> Config{RAG Config}
+    Config --> Retrieval[task9_retrieval_pipeline.py]
+    
+    subgraph Retrieval Pipeline
+        Retrieval --> DenseSearch[task5_semantic_search.py]
+        Retrieval --> SparseSearch[task6_lexical_search.py]
+        DenseSearch --> ChromaDB[(ChromaDB Vector Store)]
+        SparseSearch --> BM25[(BM25Okapi Index)]
+        DenseSearch --> RRF[task7_reranking.py: RRF Fusion]
+        SparseSearch --> RRF
+        RRF --> Rerank[task7_reranking.py: Cross-Encoder Rerank]
+        Rerank --> ThresholdCheck{Score > Threshold?}
+        ThresholdCheck -- No --> Fallback[task8_pageindex_vectorless.py: PageIndex Fallback]
+        ThresholdCheck -- Yes --> FinalChunks[Top K Chunks]
+        Fallback --> FinalChunks
+    end
+    
+    FinalChunks --> Reorder[task10_generation.py: Reorder for LLM]
+    Reorder --> LLM[GPT-4o-mini / OpenAI API]
+    LLM --> Response([Vietnamese Citation Answer])
+    Response --> Streamlit
 ```
 
 ---
@@ -180,25 +202,43 @@ run_dashboard()
 
 | Thành viên | MSSV | Nhiệm vụ | Trạng thái |
 |-----------|------|----------|------------|
-| | | | |
-| | | | |
-| | | | |
-| | | | |
+| Nguyễn Nhứt Đăng | 2A202600602 | Xây dựng Search Engine (Lexical & Semantic Search), Reranking, PageIndex Fallback và Giao diện Streamlit UI (Cohere style). | Hoàn thành |
+| Nguyễn Thanh Toàn | 2A202600633 | Xây dựng Chunking, Indexing, LLM Generation & Citation, và lập Golden Dataset (15+ Q&A). | Hoàn thành |
 
 ---
 
 ## Hướng Dẫn Chạy
 
-```bash
-# Cài đặt dependencies
-pip install -r requirements.txt
+### 1. Cài đặt các thư viện cần thiết
 
-# Chạy app
-streamlit run app.py
-# hoặc
-chainlit run app.py
+```bash
+# Di chuyển vào thư mục group_project
+cd Day08_RAG_pipeline_cohort2/group_project
+
+# Cài đặt các thư viện
+pip install -r ../personal_project/2A202600602-Nguyen-Nhut-Dang/requirements.txt
 ```
 
----
+### 2. Cấu hình biến môi trường
 
-## Lưu ý: Hãy giữ lại repo này nếu như bạn học track 3 giai đoạn 2, chúng ta sẽ phát triển tiếp dự án lên knowledge graph để khắc phục các câu hỏi hóc búa khi có các câu hỏi khó.
+Đảm bảo bạn đã sao chép hoặc tạo file `.env` ở thư mục gốc của cohort (`Day08_RAG_pipeline_cohort2/.env`) có các thông số:
+```env
+OPENAI_API_KEY=your_openai_api_key
+PAGEINDEX_API_KEY=your_pageindex_api_key
+```
+
+### 3. Chạy Ứng dụng Chatbot
+
+```bash
+# Từ thư mục group_project
+streamlit run app.py
+```
+
+### 4. Chạy Pipeline Đánh giá
+
+```bash
+# Từ thư mục group_project
+python evaluation/eval_pipeline.py
+```
+Kết quả đánh giá so sánh A/B sẽ được xuất tự động ra file [results.md](file:///c:/Users/Dang/Desktop/ai-20k/Day08_RAG_pipeline_cohort2/group_project/evaluation/results.md).
+

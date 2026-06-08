@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrugLaw RAG - Cohere Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR: PARAMETERS CONFIGURATION -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-group">
+                    <i class="fa-solid fa-dna logo-icon"></i>
+                    <span class="logo-text">DrugLaw RAG</span>
+                </div>
+                <button id="btn-collapse-sidebar" class="collapse-btn" title="Thu gọn menu">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3 class="section-title"><i class="fa-solid fa-sliders icon-margin"></i> Cấu hình RAG</h3>
+                    
+                    <div class="control-group">
+                        <label for="param-top-k">
+                            <span>Top-K Candidates</span>
+                            <span id="val-top-k" class="param-badge">5</span>
+                        </label>
+                        <input type="range" id="param-top-k" min="1" max="10" value="5" step="1">
+                        <span class="help-text">Số lượng tài liệu trích xuất từ mỗi bộ tìm kiếm.</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="param-threshold">
+                            <span>Score Threshold</span>
+                            <span id="val-threshold" class="param-badge">0.30</span>
+                        </label>
+                        <input type="range" id="param-threshold" min="0.1" max="1.0" value="0.3" step="0.05">
+                        <span class="help-text">Ngưỡng điểm. Nếu thấp hơn sẽ kích hoạt Fallback.</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="section-title"><i class="fa-solid fa-arrows-spin icon-margin"></i> Bộ Reranking</h3>
+                    
+                    <div class="control-group checkbox-group">
+                        <input type="checkbox" id="param-use-reranking" checked>
+                        <label for="param-use-reranking">Kích hoạt Reranking</label>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="param-rerank-method">Thuật toán Rerank</label>
+                        <select id="param-rerank-method">
+                            <option value="cross_encoder">Cross-Encoder (Jina/OpenAI)</option>
+                            <option value="mmr">MMR (Maximal Marginal Relevance)</option>
+                            <option value="rrf">RRF (Reciprocal Rank Fusion)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="section-title"><i class="fa-solid fa-microchip icon-margin"></i> Mô hình LLM</h3>
+                    
+                    <div class="control-group">
+                        <label for="param-llm-model">Model</label>
+                        <select id="param-llm-model">
+                            <option value="gpt-4o-mini">gpt-4o-mini (Nhanh & Tối ưu)</option>
+                            <option value="gpt-4o">gpt-4o (Thông minh hơn)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="param-temp">
+                            <span>Temperature</span>
+                            <span id="val-temp" class="param-badge">0.3</span>
+                        </label>
+                        <input type="range" id="param-temp" min="0.0" max="1.0" value="0.3" step="0.1">
+                        <span class="help-text">Thấp = factual, Cao = sáng tạo.</span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="btn-reset" class="btn btn-secondary">
+                    <i class="fa-solid fa-trash-can icon-margin"></i> Xóa lịch sử chat
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN LAYOUT: CHAT (60%) & INSPECTOR (40%) -->
+        <main class="main-content">
+            <!-- CHAT AREA -->
+            <section class="chat-section" id="chat-section">
+                <header class="chat-header">
+                    <div class="header-left">
+                        <button id="btn-expand-sidebar" class="expand-btn" title="Mở rộng menu" style="display: none;">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
+                        <div class="header-title">Trợ lý Pháp luật ma túy</div>
+                    </div>
+                    <div class="header-status">
+                        <span class="status-dot"></span> Đang hoạt động
+                    </div>
+                </header>
+
+                <div class="chat-feed" id="chat-feed">
+                    <!-- Default welcome message -->
+                    <div class="message assistant-message">
+                        <div class="message-content">
+                            <p>Chào mừng bạn đến với <strong>DrugLaw RAG Dashboard</strong>! Tôi là trợ lý AI được tích hợp hệ thống RAG nâng cao để trả lời các câu hỏi về <strong>luật ma túy Việt Nam</strong> và <strong>tin tức tội phạm tệ nạn ma túy liên quan tới nghệ sĩ</strong>.</p>
+                            <p>Hãy thử chọn một trong các câu hỏi mẫu dưới đây hoặc nhập câu hỏi của riêng bạn:</p>
+                            
+                            <div class="suggestion-grid">
+                                <button class="suggestion-btn" data-query="Hình phạt tội tàng trữ ma túy theo điều 249 BLHS là gì?">
+                                    <i class="fa-solid fa-scale-balanced icon-margin"></i> Hình phạt tàng trữ ma túy
+                                </button>
+                                <button class="suggestion-btn" data-query="Ca sĩ Chi Dân và người mẫu An Tây bị truy tố về tội gì?">
+                                    <i class="fa-solid fa-newspaper icon-margin"></i> Vụ án ca sĩ Chi Dân & An Tây
+                                </button>
+                                <button class="suggestion-btn" data-query="Luật phòng chống ma túy quy định mấy hình thức cai nghiện?">
+                                    <i class="fa-solid fa-hospital-user icon-margin"></i> Các hình thức cai nghiện ma túy
+                                </button>
+                                <button class="suggestion-btn" data-query="Diễn viên hài Hữu Tín bị kết án bao nhiêu năm tù?">
+                                    <i class="fa-solid fa-gavel icon-margin"></i> Vụ án diễn viên Hữu Tín
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="chat-footer">
+                    <form id="chat-form" class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Nhập câu hỏi của bạn tại đây..." autocomplete="off">
+                        <button type="submit" class="btn-send">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </footer>
+            </section>
+
+            <!-- DRAG SPLITTER RESIZER -->
+            <div class="resizer" id="drag-handle" title="Kéo để chỉnh kích thước"></div>
+
+            <!-- PIPELINE INSPECTOR AREA -->
+            <section class="inspector-section" id="inspector-section">
+                <header class="inspector-header">
+                    <div class="inspector-title"><i class="fa-solid fa-binoculars icon-margin"></i> Pipeline Inspector</div>
+                    <div class="inspector-meta" id="pipeline-meta">Sẵn sàng</div>
+                </header>
+
+                <div class="inspector-body">
+                    <!-- Status panel: Latency and Fallback indicators -->
+                    <div class="status-panel-grid" id="status-panel-grid" style="display: none;">
+                        <div class="status-card glass">
+                            <span class="status-label">Độ trễ xử lý</span>
+                            <span class="status-value" id="status-latency">0 ms</span>
+                        </div>
+                        <div class="status-card glass" id="fallback-card">
+                            <span class="status-label">Trạng thái Fallback</span>
+                            <span class="status-value" id="status-fallback">Không</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Selector -->
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="tab-retrieve">
+                            <i class="fa-solid fa-magnifying-glass tab-icon"></i> Retrieval
+                        </button>
+                        <button class="tab-btn" data-tab="tab-rerank">
+                            <i class="fa-solid fa-bullseye tab-icon"></i> Rerank/Fusion
+                        </button>
+                        <button class="tab-btn" data-tab="tab-sources">
+                            <i class="fa-solid fa-file-invoice tab-icon"></i> Source Context
+                        </button>
+                    </div>
+
+                    <!-- Tabs Contents -->
+                    <div class="tabs-content">
+                        <!-- TAB 1: RETRIEVAL STAGE -->
+                        <div class="tab-pane active" id="tab-retrieve">
+                            <div class="pane-instruction">Hiển thị kết quả tìm kiếm ban đầu (Lexical vs Dense) trước khi trộn thứ hạng:</div>
+                            
+                            <div class="retrieval-split">
+                                <div class="retrieval-col">
+                                    <h4 class="col-title"><i class="fa-solid fa-font icon-margin"></i> BM25 (Lexical)</h4>
+                                    <div class="card-list" id="list-lexical">
+                                        <div class="empty-state">Nhập câu hỏi để bắt đầu...</div>
+                                    </div>
+                                </div>
+                                <div class="retrieval-col">
+                                    <h4 class="col-title"><i class="fa-solid fa-network-wired icon-margin"></i> Vector (Semantic)</h4>
+                                    <div class="card-list" id="list-semantic">
+                                        <div class="empty-state">Nhập câu hỏi để bắt đầu...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: RERANKING STAGE -->
+                        <div class="tab-pane" id="tab-rerank">
+                            <div class="pane-instruction">Hiển thị kết quả trộn RRF và chấm điểm lại bằng Cross-Encoder:</div>
+                            <div class="card-list" id="list-reranked">
+                                <div class="empty-state">Nhập câu hỏi để bắt đầu...</div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: SOURCE CONTEXT -->
+                        <div class="tab-pane" id="tab-sources">
+                            <div class="pane-instruction">Các khối văn bản gốc được đưa vào Prompt (đã tái sắp xếp tránh Lost in the Middle):</div>
+                            <div class="card-list" id="list-sources">
+                                <div class="empty-state">Nhập câu hỏi để bắt đầu...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+</body>
+</html>

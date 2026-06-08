@@ -13,5 +13,65 @@
     "question": "Danh mục các chất ma tuý thuộc nhóm I theo quy định pháp luật Việt Nam gồm những chất nào?",
     "expected_answer": "Nhóm I gồm các chất ma tuý tuyệt đối cấm sử dụng trong y học và đời sống, bao gồm heroin, cocaine, methamphetamine, MDMA (ecstasy), cannabis (cần sa), và các chất tương tự.",
     "expected_context": "Nghị định 57/2022/NĐ-CP, Phụ lục I"
+  },
+  {
+    "question": "Ca sĩ Chu Bin bị bắt vào ngày tháng năm nào và vì hành vi gì?",
+    "expected_answer": "Ca sĩ Chu Bin bị Công an quận 10 tạm giữ để điều tra về hành vi liên quan đến ma túy sau khi công an kiểm tra một căn nhà trên địa bàn quận 10 và phát hiện khoảng 6 người đang tổ chức, sử dụng trái phép chất ma túy.",
+    "expected_context": "ca-si-chu-bin-bi-tam-giu-vi-lien-quan-den-ma-tuy.md"
+  },
+  {
+    "question": "Ca sĩ Chi Dân bị truy tố về các tội danh gì và hành vi vi phạm cụ thể của anh ta diễn ra như thế nào?",
+    "expected_answer": "Ca sĩ Chi Dân (Nguyễn Trung Hiếu) bị truy tố về Tội tổ chức sử dụng trái phép chất ma túy và Tàng trữ trái phép chất ma túy. Vào sáng ngày 4/11/2024, Chi Dân cùng anh trai đến phòng của Lê Thị Triều, rủ cả nhóm sử dụng ma túy, trực tiếp chi tiền mua ma túy loại 'nước vui' pha bò húc cho cả nhóm uống, đồng thời hít ma túy trực tiếp bằng móng tay.",
+    "expected_context": "truy-to-ca-si-chi-dan-nguoi-mau-an-tay.md"
+  },
+  {
+    "question": "Vụ án diễn viên hài Hữu Tín sử dụng ma túy diễn ra như thế nào và các bị cáo nhận hình phạt ra sao?",
+    "expected_answer": "Rạng sáng 11/6/2022, Hữu Tín cùng các bạn đi nhậu về căn hộ ở quận 8, lấy thuốc lắc và ma túy có sẵn trong phòng của Nguyễn Hoàng Phi ra sử dụng. Phi đi làm về lấy thêm ma túy đưa cho nhóm chơi và mở nhạc lớn. Sáng cùng ngày, công an ập vào bắt quả tang. Kết quả: Nguyễn Hoàng Phi bị phạt 13 năm 6 tháng tù về tội Tàng trữ trái phép chất ma túy và Tổ chức sử dụng trái phép chất ma túy.",
+    "expected_context": "dien-vien-hai-huu-tin-khai-su-dung-ma-tuy-do-to-mo.md"
+  },
+  {
+    "question": "Nữ diễn viên đóng Hoài 'Thát-chơ' tên thật là gì, bị bắt khi đang làm gì và có thể đối mặt với hình phạt nào?",
+    "expected_answer": "Nữ diễn viên đóng Hoài 'Thát-chơ' tên thật là Bùi Thị Lệ Hằng. Bà bị Công an phát hiện và bắt giữ vào tối 10/3 khi đang mua bán trái phép ma túy trước số nhà 104 Khâm Thiên, thu giữ gần 0,7gram ma túy tổng hợp. Bà Hằng khai mua số ma túy này với giá 500.000 đồng để bán lại kiếm lời và có thể đối mặt với khung hình phạt từ 2 đến 7 năm tù giam theo Điều 251 Bộ luật Hình sự năm 2015.",
+    "expected_context": "nu-dien-vien-dong-hoai-that-cho-co-the-doi-mat-hinh-phat-nao.md"
+  },
+  {
+    "question": "Theo Luật Phòng chống ma tuý 2021, thời hạn quản lý người sử dụng trái phép chất ma túy là bao lâu và bắt đầu từ khi nào?",
+    "expected_answer": "Thời hạn quản lý người sử dụng trái phép chất ma túy là 01 năm kể từ ngày Chủ tịch Ủy ban nhân dân cấp xã ra quyết định quản lý.",
+    "expected_context": "luat-phong-chong-ma-tuy-2021.md"
+  },
+  {
+    "question": "Các hành vi nào bị nghiêm cấm theo Điều 5 Luật Phòng chống ma túy 2021?",
+    "expected_answer": "Các hành vi bị nghiêm cấm bao gồm trồng cây có chứa chất ma túy; sản xuất, tàng trữ, vận chuyển, mua bán trái phép chất ma túy; sử dụng, tổ chức sử dụng trái phép chất ma túy; cưỡng bức, lôi kéo người khác sử dụng ma túy; chống lại hoặc cản trở việc xét nghiệm chất ma túy trong cơ thể.",
+    "expected_context": "luat-phong-chong-ma-tuy-2021.md"
+  },
+  {
+    "question": "Người nghiện ma túy từ đủ 12 tuổi đến dưới 18 tuổi bị đưa vào cơ sở cai nghiện bắt buộc khi nào và thời hạn là bao lâu?",
+    "expected_answer": "Họ bị đưa vào cơ sở cai nghiện bắt buộc khi không đăng ký, không thực hiện hoặc tự ý chấm dứt cai nghiện tự nguyện; bị phát hiện sử dụng ma túy trong thời gian cai nghiện tự nguyện; hoặc tự ý chấm dứt điều trị nghiện các chất dạng thuốc phiện bằng thuốc thay thế. Thời hạn cai nghiện bắt buộc đối với đối tượng này là từ đủ 06 tháng đến 12 tháng.",
+    "expected_context": "luat-phong-chong-ma-tuy-2021.md"
+  },
+  {
+    "question": "Quy trình cai nghiện ma túy theo Điều 29 Luật Phòng chống ma túy 2021 gồm những giai đoạn nào?",
+    "expected_answer": "Quy trình cai nghiện gồm 5 giai đoạn: a) Tiếp nhận, phân loại; b) Điều trị cắt cơn, giải độc, điều trị rối loạn tâm thần và các bệnh lý khác; c) Giáo dục, tư vấn, phục hồi hành vi, nhân cách; d) Lao động trị liệu, học nghề; đ) Chuẩn bị tái hòa nhập cộng đồng.",
+    "expected_context": "luat-phong-chong-ma-tuy-2021.md"
+  },
+  {
+    "question": "Ai có thẩm quyền quyết định việc đưa người nghiện ma túy từ đủ 12 tuổi đến dưới 18 tuổi vào cơ sở cai nghiện bắt buộc?",
+    "expected_answer": "Việc đưa người nghiện ma túy từ đủ 12 tuổi đến dưới 18 tuổi vào cơ sở cai nghiện bắt buộc do Tòa án nhân dân cấp huyện quyết định và không phải là biện pháp xử lý hành chính.",
+    "expected_context": "luat-phong-chong-ma-tuy-2021.md"
+  },
+  {
+    "question": "Trách nhiệm của cơ sở giáo dục trong việc xét nghiệm chất ma túy đối với học sinh, sinh viên được quy định như thế nào?",
+    "expected_answer": "Cơ sở giáo dục có trách nhiệm phối hợp với cơ quan, tổ chức, cá nhân có thẩm quyền tổ chức xét nghiệm chất ma túy trong cơ thể khi cần thiết để phát hiện học sinh, sinh viên, học viên sử dụng trái phép chất ma túy.",
+    "expected_context": "luat-phong-chong-ma-tuy-2021.md"
+  },
+  {
+    "question": "Bị can Andrea Aybar Carmona (An Tây) trong vụ án Hoàng Sỹ Thắng bị truy tố về tội danh gì?",
+    "expected_answer": "Andrea Aybar Carmona (An Tây, quốc tịch Tây Ban Nha; người mẫu, diễn viên) bị truy tố về Tội tổ chức sử dụng trái phép chất ma túy và Tàng trữ trái phép chất ma túy.",
+    "expected_context": "truy-to-ca-si-chi-dan-nguoi-mau-an-tay.md"
+  },
+  {
+    "question": "Diễn viên hài Hữu Tín bị phát hiện và bắt quả tang sử dụng ma túy bởi lực lượng chức năng nào, vào thời điểm nào?",
+    "expected_answer": "Diễn viên hài Hữu Tín cùng bạn bè bị Công an phường 5, quận 8 ập vào bắt quả tang vào sáng ngày 11/6/2022 tại căn hộ chung cư thuê ở quận 8.",
+    "expected_context": "dien-vien-hai-huu-tin-khai-su-dung-ma-tuy-do-to-mo.md"
   }
 ]
