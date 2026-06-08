@@ -4,6 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("chat-input");
     const chatFeed = document.getElementById("chat-feed");
     const btnReset = document.getElementById("btn-reset");
+    
+    // Conversation history memory array
+    let chatHistory = [];
 
     // Prompt Inspector DOM Elements
     const DEFAULT_SYSTEM_PROMPT = `Answer the question in Vietnamese.
@@ -235,6 +238,11 @@ For all other questions concerning drug laws, legal documents, or celebrity news
             
             // Replace brackets with custom clickable citation badges in the parsed HTML
             parsed = parsed.replace(/\[([^\]]+)\]/g, (match, citeText) => {
+                const meta = getChunkMetadataByCitation(citeText);
+                const url = meta && meta.url ? meta.url : "";
+                if (url) {
+                    return `<span class="citation-badge" data-cite-target="${citeText}">${citeText}</span><a href="${url}" target="_blank" class="citation-link" title="Mở liên kết nguồn"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right: 3px;"></i>nguồn</a>`;
+                }
                 return `<span class="citation-badge" data-cite-target="${citeText}">${citeText}</span>`;
             });
             return parsed;
@@ -253,6 +261,11 @@ For all other questions concerning drug laws, legal documents, or celebrity news
 
             // Replace brackets with custom clickable citation badges
             escaped = escaped.replace(/\[([^\]]+)\]/g, (match, citeText) => {
+                const meta = getChunkMetadataByCitation(citeText);
+                const url = meta && meta.url ? meta.url : "";
+                if (url) {
+                    return `<span class="citation-badge" data-cite-target="${citeText}">${citeText}</span><a href="${url}" target="_blank" class="citation-link" title="Mở liên kết nguồn"><i class="fa-solid fa-arrow-up-right-from-square" style="margin-right: 3px;"></i>nguồn</a>`;
+                }
                 return `<span class="citation-badge" data-cite-target="${citeText}">${citeText}</span>`;
             });
 
@@ -295,6 +308,7 @@ For all other questions concerning drug laws, legal documents, or celebrity news
 
     // Reset Chat History
     btnReset.addEventListener("click", () => {
+        chatHistory = [];
         chatFeed.innerHTML = `
             <div class="message assistant-message">
                 <div class="message-content">
@@ -336,6 +350,7 @@ For all other questions concerning drug laws, legal documents, or celebrity news
         // Build Payload
         const payload = {
             query: query,
+            history: chatHistory.slice(-10), // Limit to last 5 turns of conversation
             top_k: parseInt(paramTopK.value),
             score_threshold: parseFloat(paramThreshold.value),
             use_reranking: paramUseRerank.checked,
@@ -409,6 +424,10 @@ For all other questions concerning drug laws, legal documents, or celebrity news
 
             // Stream is fully done, clean up cursor and finalize citation bindings
             bubbleContentElement.innerHTML = formatMessageText(assistantText);
+            
+            // Save current interaction to history
+            chatHistory.push({ role: "user", content: query });
+            chatHistory.push({ role: "assistant", content: assistantText });
             
             // Remove temp streaming bubble ID
             const streamingBubble = document.getElementById("streaming-assistant-bubble");
@@ -698,45 +717,101 @@ For all other questions concerning drug laws, legal documents, or celebrity news
         }
     }
 
-    function getChunkTextByCitation(citeText) {
-        if (!window.currentChunks) return null;
-        const cleanCite = citeText.toLowerCase().trim();
+    function removeAccents(str) {
+        return str.normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/đ/g, "d")
+                  .replace(/Đ/g, "D");
+    }
+
+    function findBestMatchingChunk(citeText) {
+        if (!window.currentChunks || window.currentChunks.length === 0) return null;
         
-        // 1. Try matching by metadata source filename
-        for (let chunk of window.currentChunks) {
-            const source = (chunk.metadata.source || "").toLowerCase();
-            if (source.includes(cleanCite) || cleanCite.includes(source)) {
-                return chunk.content;
+        const rawClean = citeText.toLowerCase().trim();
+        
+        // 1. If it's a number within bounds
+        const numMatch = rawClean.match(/\b\d+\b/);
+        if (numMatch) {
+            const val = parseInt(numMatch[0]);
+            if (val >= 0 && val < window.currentChunks.length) {
+                return window.currentChunks[val];
+            }
+            if (val - 1 >= 0 && val - 1 < window.currentChunks.length) {
+                return window.currentChunks[val - 1];
             }
         }
         
-        // 2. Try parsing name part of comma-separated citations e.g. "vnexpress, 2024"
-        const parts = cleanCite.split(",");
-        if (parts.length > 0) {
-            const namePart = parts[0].trim();
+        // 2. Accent-insensitive token-based matching
+        const cleanCite = removeAccents(rawClean);
+        const words = cleanCite.split(/[\s,.\-\/]+/)
+                               .map(w => w.trim())
+                               .filter(w => w.length > 2 && w !== "2023" && w !== "2024" && w !== "2025" && w !== "2026");
+                               
+        if (words.length === 0) {
             for (let chunk of window.currentChunks) {
-                const source = (chunk.metadata.source || "").toLowerCase();
-                if (source.includes(namePart) || namePart.includes(source)) {
-                    return chunk.content;
+                const src = removeAccents((chunk.metadata.source || "").toLowerCase());
+                if (src.includes(cleanCite) || cleanCite.includes(src)) {
+                    return chunk;
+                }
+            }
+            return window.currentChunks[0];
+        }
+        
+        // 3. Score chunks
+        let bestChunk = null;
+        let maxScore = -1;
+        
+        for (let chunk of window.currentChunks) {
+            const src = removeAccents((chunk.metadata.source || "").toLowerCase());
+            const url = removeAccents((chunk.metadata.url || "").toLowerCase());
+            const content = removeAccents((chunk.content || "").toLowerCase());
+            
+            let score = 0;
+            for (let word of words) {
+                if (src.includes(word)) {
+                    score += 10;
+                }
+                if (url.includes(word)) {
+                    score += 8;
+                }
+                if (content.includes(word)) {
+                    score += 1;
+                }
+            }
+            
+            if (score > maxScore && score > 0) {
+                maxScore = score;
+                bestChunk = chunk;
+            }
+        }
+        
+        if (bestChunk) {
+            return bestChunk;
+        }
+        
+        // 4. Try matching first word as fallback
+        if (words.length > 0) {
+            const firstWord = words[0];
+            for (let chunk of window.currentChunks) {
+                const src = removeAccents((chunk.metadata.source || "").toLowerCase());
+                const url = removeAccents((chunk.metadata.url || "").toLowerCase());
+                if (src.includes(firstWord) || url.includes(firstWord)) {
+                    return chunk;
                 }
             }
         }
+        
+        return window.currentChunks[0];
+    }
 
-        // 3. Fallback to numeric indexing
-        const matchIdx = cleanCite.match(/\d+/);
-        if (matchIdx) {
-            const idx = parseInt(matchIdx[0]);
-            if (window.currentChunks[idx]) {
-                return window.currentChunks[idx].content;
-            }
-        }
-        
-        // 4. Default to first chunk
-        if (window.currentChunks.length > 0) {
-            return window.currentChunks[0].content;
-        }
-        
-        return null;
+    function getChunkTextByCitation(citeText) {
+        const chunk = findBestMatchingChunk(citeText);
+        return chunk ? chunk.content : null;
+    }
+
+    function getChunkMetadataByCitation(citeText) {
+        const chunk = findBestMatchingChunk(citeText);
+        return chunk ? chunk.metadata : null;
     }
 });
 

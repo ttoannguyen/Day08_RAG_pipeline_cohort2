@@ -36,7 +36,7 @@ def main() -> None:
     if cmd == "server":
         import uvicorn
 
-        print("DrugLaw RAG → http://127.0.0.1:8000")
+        print("DrugLaw RAG -> http://127.0.0.1:8000")
         uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
         return
 

@@ -1429,4 +1429,45 @@ body.light-theme .prompt-user-viewer {
     color: #334155;
 }
 
+/* Clickable source web link behind citation */
+.citation-link {
+    color: var(--accent-end);
+    text-decoration: none;
+    font-size: 0.8rem;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+    vertical-align: middle;
+}
+
+.citation-link:hover {
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--text-primary);
+    border-color: var(--accent-end);
+    transform: translateY(-1px);
+}
+
+.citation-link i {
+    font-size: 0.75em;
+}
+
+body.light-theme .citation-link {
+    background: rgba(244, 63, 94, 0.05);
+    border-color: rgba(244, 63, 94, 0.15);
+    color: var(--accent-start);
+}
+
+body.light-theme .citation-link:hover {
+    background: rgba(244, 63, 94, 0.1);
+    color: #9f1239;
+    border-color: var(--accent-start);
+}
+
 

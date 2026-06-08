@@ -45,8 +45,13 @@ app.add_middleware(
 )
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
 class ChatRequest(BaseModel):
     query: str
+    history: list[ChatMessage] = []
     top_k: int = 5
     score_threshold: float = 0.3
     use_reranking: bool = True
@@ -54,6 +59,7 @@ class ChatRequest(BaseModel):
     llm_model: str = "gpt-4o-mini"
     temperature: float = 0.3
     system_prompt: str = ""
+    max_tokens: int = 65000
 
 
 @app.post("/api/chat")
@@ -111,13 +117,47 @@ async def chat_endpoint(req: ChatRequest):
     elapsed_time_ms = int((time.time() - start_time) * 1000)
     
     # Serialization helper
+    def get_url_from_file(filename: str, doc_type: str) -> str:
+        if not filename:
+            return ""
+        safe_name = Path(filename).name
+        if doc_type == "news":
+            file_path = project_root / "data" / "standardized" / "news" / safe_name
+        else:
+            file_path = project_root / "data" / "standardized" / "legal" / safe_name
+            
+        if file_path.exists():
+            try:
+                import re
+                content = file_path.read_text(encoding="utf-8")
+                # Find **Source:** or Source: URL
+                match = re.search(r'(?i)\*\*Source:\*\*\s*(https?://[^\s\)\*\]]+)', content)
+                if match:
+                    return match.group(1).strip()
+                match_fallback = re.search(r'(?i)Source:\s*(https?://[^\s\)\*\]]+)', content)
+                if match_fallback:
+                    return match_fallback.group(1).strip()
+            except Exception as e:
+                print(f"[ERROR] Failed to extract source URL from {filename}: {e}")
+        return ""
+
     def serialize_results(results_list):
-        return [{
-            "content": r.get("content", ""),
-            "score": float(r.get("score", 0.0)),
-            "metadata": r.get("metadata", {}),
-            "source": r.get("source", "unknown")
-        } for r in results_list]
+        serialized = []
+        for r in results_list:
+            meta = r.get("metadata", {}).copy()
+            if "url" not in meta or not meta["url"]:
+                doc_type = meta.get("type", "unknown")
+                source_file = meta.get("source", "")
+                url = get_url_from_file(source_file, doc_type)
+                if url:
+                    meta["url"] = url
+            serialized.append({
+                "content": r.get("content", ""),
+                "score": float(r.get("score", 0.0)),
+                "metadata": meta,
+                "source": r.get("source", "unknown")
+            })
+        return serialized
 
     # Construct prompts for LLM and expose in metadata
     context_str = format_context(reordered_chunks)
@@ -156,14 +196,28 @@ For all other questions concerning drug laws, legal documents, or celebrity news
         from openai import OpenAI
         client = OpenAI()
         
+        # Build messages with history
+        messages = [{"role": "system", "content": system_prompt_to_use}]
+        for msg in req.history:
+            messages.append({"role": msg.role, "content": msg.content})
+        messages.append({"role": "user", "content": user_message})
+
+        # Determine max_tokens to send to the API call
+        max_tokens_to_send = req.max_tokens
+        openai_base_url = os.getenv("OPENAI_BASE_URL", "")
+        if "openrouter.ai" not in openai_base_url:
+            # Cap standard OpenAI model outputs to avoid 400 Bad Request errors
+            if "gpt-4o-mini" in req.llm_model:
+                max_tokens_to_send = min(max_tokens_to_send, 16384)
+            elif "gpt-4o" in req.llm_model:
+                max_tokens_to_send = min(max_tokens_to_send, 4096)
+
         try:
             response = client.chat.completions.create(
                 model=req.llm_model,
-                messages=[
-                    {"role": "system", "content": system_prompt_to_use},
-                    {"role": "user", "content": user_message}
-                ],
+                messages=messages,
                 temperature=req.temperature,
+                max_tokens=max_tokens_to_send,
                 stream=True
             )
             for chunk in response:
