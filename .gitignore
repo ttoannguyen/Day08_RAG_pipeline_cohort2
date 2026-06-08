@@ -1,0 +1,14 @@
+env
+.env
+*.env
+*.env.*
+*.env*
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Chroma DB
+personal_project/2A202600633-Nguyen-Thanh-Toan/data/chroma/

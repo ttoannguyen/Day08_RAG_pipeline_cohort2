@@ -10,6 +10,19 @@ Yêu cầu:
 """
 
 
+import chromadb
+from pathlib import Path
+from sentence_transformers import SentenceTransformer
+from src.task4_chunking_indexing import EMBEDDING_MODEL
+
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
+
 def semantic_search(query: str, top_k: int = 10) -> list[dict]:
     """
     Tìm kiếm ngữ nghĩa sử dụng vector similarity.
@@ -26,37 +39,51 @@ def semantic_search(query: str, top_k: int = 10) -> list[dict]:
         }
         Sorted by score descending.
     """
-    # TODO: Implement semantic search
-    #
     # Bước 1: Embed query bằng cùng model ở Task 4
+    model = get_model()
+    query_embedding = model.encode(query).tolist()
+
     # Bước 2: Query vector store (cosine similarity)
+    db_dir = Path(__file__).parent.parent / "data" / "chroma"
+    client = chromadb.PersistentClient(path=str(db_dir))
+
+    try:
+        collection = client.get_collection(name="DrugLawDocs")
+    except Exception:
+        return []
+
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=top_k
+    )
+
     # Bước 3: Return top_k results
-    #
-    # Ví dụ với Weaviate:
-    # import weaviate
-    # from sentence_transformers import SentenceTransformer
-    #
-    # model = SentenceTransformer("BAAI/bge-m3")
-    # query_embedding = model.encode(query).tolist()
-    #
-    # client = weaviate.connect_to_local()
-    # collection = client.collections.get("DrugLawDocs")
-    #
-    # results = collection.query.near_vector(
-    #     near_vector=query_embedding,
-    #     limit=top_k,
-    #     return_metadata=MetadataQuery(distance=True)
-    # )
-    #
-    # return [
-    #     {
-    #         "content": obj.properties["content"],
-    #         "score": 1 - obj.metadata.distance,  # distance → similarity
-    #         "metadata": {"source": obj.properties["source"], ...}
-    #     }
-    #     for obj in results.objects
-    # ]
-    raise NotImplementedError("Implement semantic_search")
+    out = []
+    if not results or not results['documents'] or len(results['documents'][0]) == 0:
+        return out
+
+    documents = results['documents'][0]
+    distances = results['distances'][0]
+    metadatas = results['metadatas'][0]
+
+    for doc, dist, meta in zip(documents, distances, metadatas):
+        # ChromaDB distance is L2 or Cosine distance
+        # space: cosine -> distance = 1 - cosine_similarity
+        # similarity = 1 - distance
+        score = 1.0 - dist
+        out.append({
+            "content": doc,
+            "score": score,
+            "metadata": {
+                "source": meta.get("source"),
+                "type": meta.get("type"),
+                "chunk_index": meta.get("chunk_index")
+            }
+        })
+
+    # Đảm bảo được sắp xếp giảm dần theo score
+    out = sorted(out, key=lambda x: x["score"], reverse=True)
+    return out
 
 
 if __name__ == "__main__":
