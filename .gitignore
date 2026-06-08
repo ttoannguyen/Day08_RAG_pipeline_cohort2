@@ -14,6 +14,7 @@ env/
 
 # Cơ sở dữ liệu Vector (ChromaDB tự sinh ra qua code)
 **/data/chroma_db/
+**/data/chroma/
 
 # File hệ thống
 .DS_Store
