@@ -80,12 +80,12 @@ def retrieve(
         return []
 
     # 1. Chạy song song (hoặc tuần tự) semantic và lexical search
-    # Lấy số ứng viên nhiều gấp đôi để thực hiện reranking tốt hơn
-    dense_results = semantic_search(query, top_k=top_k * 2)
-    sparse_results = lexical_search(query, top_k=top_k * 2)
+    # Lấy số ứng viên nhiều gấp bốn để thực hiện reranking tốt hơn
+    dense_results = semantic_search(query, top_k=top_k * 4)
+    sparse_results = lexical_search(query, top_k=top_k * 4)
 
     # 2. Trộn kết quả bằng Reciprocal Rank Fusion (RRF)
-    merged = rerank_rrf([dense_results, sparse_results], top_k=top_k * 2)
+    merged = rerank_rrf([dense_results, sparse_results], top_k=top_k * 4)
     
     # Gán nhãn nguồn mặc định là hybrid
     for item in merged:

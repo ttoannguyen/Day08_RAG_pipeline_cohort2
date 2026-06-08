@@ -45,10 +45,23 @@ def semantic_search(query: str, top_k: int = 10) -> list[dict]:
     if not query:
         return []
 
+    # Simple query expansion for Vietnamese drug law terminology
+    query_processed = query
+    query_lower = query.lower()
+    if "hình thức cai nghiện" in query_lower:
+        query_processed += " biện pháp cai nghiện"
+    elif "biện pháp cai nghiện" in query_lower:
+        query_processed += " hình thức cai nghiện"
+
+    if "blhs" in query_lower:
+        query_processed += " bộ luật hình sự"
+    elif "bộ luật hình sự" in query_lower:
+        query_processed += " blhs"
+
     # 1. Embed query sử dụng cùng model OpenAI ở Task 4
     client = OpenAI()
     response = client.embeddings.create(
-        input=[query],
+        input=[query_processed],
         model="text-embedding-3-small"
     )
     query_embedding = response.data[0].embedding
@@ -84,10 +97,19 @@ def semantic_search(query: str, top_k: int = 10) -> list[dict]:
         metadatas = results['metadatas'][0] if results['metadatas'] else [{} for _ in ids]
         distances = results['distances'][0] if results['distances'] else [0.0 for _ in ids]
 
+        import re
+        articles = re.findall(r"điều\s+(\d+)", query_processed, re.IGNORECASE)
+
         for i in range(len(ids)):
             # Vì ta cấu hình space="cosine", distance = 1 - cosine_similarity.
             # Do đó similarity_score = 1.0 - distance.
             similarity_score = 1.0 - distances[i]
+            
+            # Boost if chunk contains the definition of the article in the query
+            for art in articles:
+                if re.search(rf"(?:^|\n|\s|\*\*)[Đđ]iều\s+{art}\.", documents[i]):
+                    similarity_score += 0.25
+                    break
             
             formatted_results.append({
                 "content": documents[i],

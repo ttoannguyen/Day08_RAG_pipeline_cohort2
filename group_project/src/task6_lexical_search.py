@@ -85,18 +85,47 @@ def lexical_search(query: str, top_k: int = 10) -> list[dict]:
     if not query or not CORPUS:
         return []
 
+    # Simple query expansion for Vietnamese drug law terminology
+    query_processed = query
+    query_lower = query.lower()
+    if "hình thức cai nghiện" in query_lower:
+        query_processed += " biện pháp cai nghiện"
+    elif "biện pháp cai nghiện" in query_lower:
+        query_processed += " hình thức cai nghiện"
+
+    if "blhs" in query_lower:
+        query_processed += " bộ luật hình sự"
+    elif "bộ luật hình sự" in query_lower:
+        query_processed += " blhs"
+
     bm25 = get_bm25_index()
-    tokenized_query = query.lower().split()
+    tokenized_query = query_processed.lower().split()
     scores = bm25.get_scores(tokenized_query)
 
-    # Sort indices by score descending using pure Python
-    scored_indices = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:top_k]
+    import re
+    articles = re.findall(r"điều\s+(\d+)", query_processed, re.IGNORECASE)
+
+    # Score and apply article header boosting before sorting to avoid candidate truncation
+    scored_items = []
+    for idx, score in enumerate(scores):
+        content = CORPUS[idx]["content"]
+        boosted_score = float(score)
+        
+        for art in articles:
+            if re.search(rf"(?:^|\n|\s|\*\*)[Đđ]iều\s+{art}\.", content):
+                boosted_score += 20.0
+                break
+        
+        scored_items.append((idx, boosted_score))
+
+    scored_items.sort(key=lambda x: x[1], reverse=True)
+    top_indices = scored_items[:top_k]
 
     results = []
-    for idx, score in scored_indices:
+    for idx, score in top_indices:
         results.append({
             "content": CORPUS[idx]["content"],
-            "score": float(score),
+            "score": score,
             "metadata": CORPUS[idx]["metadata"]
         })
     return results

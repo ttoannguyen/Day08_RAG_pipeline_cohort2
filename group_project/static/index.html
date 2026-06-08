@@ -108,8 +108,13 @@
                         </button>
                         <div class="header-title">Trợ lý Pháp luật ma túy</div>
                     </div>
-                    <div class="header-status">
-                        <span class="status-dot"></span> Đang hoạt động
+                    <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
+                        <button id="btn-theme-toggle" class="theme-toggle-btn" title="Chuyển đổi giao diện Sáng/Tối">
+                            <i class="fa-solid fa-sun theme-icon"></i>
+                        </button>
+                        <div class="header-status">
+                            <span class="status-dot"></span> Đang hoạt động
+                        </div>
                     </div>
                 </header>
 
@@ -182,6 +187,9 @@
                         <button class="tab-btn" data-tab="tab-sources">
                             <i class="fa-solid fa-file-invoice tab-icon"></i> Source Context
                         </button>
+                        <button class="tab-btn" data-tab="tab-prompt">
+                            <i class="fa-solid fa-wand-magic-sparkles tab-icon"></i> Prompt Magic
+                        </button>
                     </div>
 
                     <!-- Tabs Contents -->
@@ -221,10 +229,45 @@
                                 <div class="empty-state">Nhập câu hỏi để bắt đầu...</div>
                             </div>
                         </div>
+
+                        <!-- TAB 4: PROMPT INSPECTOR & EDITOR -->
+                        <div class="tab-pane" id="tab-prompt">
+                            <div class="pane-instruction">Xem hoặc tùy chỉnh cấu trúc Prompt nạp vào LLM để tối ưu hóa câu trả lời:</div>
+                            <div class="prompt-inspector-container">
+                                <div class="prompt-editor-section">
+                                    <div class="prompt-label-group">
+                                        <span class="prompt-section-title"><i class="fa-solid fa-user-gear icon-margin"></i> System Prompt (Chỉnh sửa trực tiếp)</span>
+                                        <button id="btn-reset-prompt" class="btn-text" title="Khôi phục System Prompt mặc định"><i class="fa-solid fa-rotate-left icon-margin"></i>Mặc định</button>
+                                    </div>
+                                    <textarea id="prompt-system-editor" placeholder="Nhập System Prompt tùy chỉnh tại đây..."></textarea>
+                                </div>
+                                <div class="prompt-viewer-section">
+                                    <span class="prompt-section-title"><i class="fa-solid fa-terminal icon-margin"></i> User Prompt (Đã nạp context ở lần truy vấn cuối)</span>
+                                    <pre class="prompt-user-viewer" id="prompt-user-viewer">Chưa có dữ liệu truy vấn. Hãy gửi một câu hỏi để hiển thị User Prompt.</pre>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Modal for Document Reader -->
+    <div id="doc-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-file-invoice modal-logo-icon"></i>
+                    <h3 id="modal-title">Xem toàn bộ tài liệu</h3>
+                </div>
+                <button id="modal-close" class="modal-close-btn" title="Đóng cửa sổ"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body-wrapper">
+                <div class="modal-body-meta" id="modal-body-meta">File: N/A</div>
+                <div class="modal-body" id="modal-body"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Marked.js for Markdown parsing -->

@@ -203,7 +203,7 @@ graph TD
 | Thành viên | MSSV | Nhiệm vụ | Trạng thái |
 |-----------|------|----------|------------|
 | Nguyễn Nhứt Đăng | 2A202600602 | Xây dựng Search Engine (Lexical & Semantic Search), Reranking, PageIndex Fallback và Giao diện Streamlit UI (Cohere style). | Hoàn thành |
-| Nguyễn Thanh Toàn | 2A202600633 | Xây dựng Chunking, Indexing, LLM Generation & Citation, và lập Golden Dataset (15+ Q&A). | Hoàn thành |
+| Nguyễn Thanh Toàn | 2A202600633 | Xây dựng Chunking, Indexing, LLM Generation & Citation, lập Golden Dataset (15+ Q&A), nghiên cứu tối ưu cấu hình RAG (tăng Top-K & điều chỉnh Score Threshold), phát triển tính năng bộ đọc tài liệu trực quan (Document Reader Modal) giúp hiển thị và tự động bôi đậm phân đoạn trích xuất từ văn bản gốc, thiết kế hệ thống chuyển đổi giao diện Sáng/Tối (Light/Dark Mode Toggle) mượt mà, tích hợp bảng quản lý Prompt chuyên sâu (Prompt Inspector & Editor) cho phép lập trình viên tùy biến System Prompt trực tiếp, và xây dựng thuật toán định tuyến định nghĩa điều luật (Article Definition Boosting) tối ưu hóa truy xuất. | Hoàn thành |
 
 ---
 

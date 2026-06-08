@@ -4,6 +4,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("chat-input");
     const chatFeed = document.getElementById("chat-feed");
     const btnReset = document.getElementById("btn-reset");
+
+    // Prompt Inspector DOM Elements
+    const DEFAULT_SYSTEM_PROMPT = `Answer the question in Vietnamese.
+
+If the question is a general greeting (e.g., "xin chào", "hello", "hi") or asking about your identity (e.g., "bạn là ai", "tên gì"), reply politely directly as the DrugLaw RAG Assistant.
+
+For all other questions concerning drug laws, legal documents, or celebrity news:
+- Only use information from the provided context.
+- For every statement of fact or claim, immediately insert a citation in brackets linking to the specific source (e.g., [Luật Phòng chống ma tuý 2021, Điều 3] or [VnExpress, 2024]).
+- If the information is not explicitly stated in the provided context, state 'Tôi không thể xác minh thông tin này từ nguồn hiện có' rather than guessing.
+- Structure your answer with clear paragraphs.`;
+
+    const promptSystemEditor = document.getElementById("prompt-system-editor");
+    const promptUserViewer = document.getElementById("prompt-user-viewer");
+    const btnResetPrompt = document.getElementById("btn-reset-prompt");
+
+    if (promptSystemEditor) {
+        promptSystemEditor.value = DEFAULT_SYSTEM_PROMPT;
+    }
+
+    if (btnResetPrompt && promptSystemEditor) {
+        btnResetPrompt.addEventListener("click", () => {
+            promptSystemEditor.value = DEFAULT_SYSTEM_PROMPT;
+        });
+    }
     
     // Sliders & Badge Indicators
     const paramTopK = document.getElementById("param-top-k");
@@ -12,6 +37,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const valThreshold = document.getElementById("val-threshold");
     const paramTemp = document.getElementById("param-temp");
     const valTemp = document.getElementById("val-temp");
+    
+    // Modal DOM Elements
+    const docModal = document.getElementById("doc-modal");
+    const modalTitle = document.getElementById("modal-title");
+    const modalBodyMeta = document.getElementById("modal-body-meta");
+    const modalBody = document.getElementById("modal-body");
+    const modalClose = document.getElementById("modal-close");
+    
+    // Theme toggle DOM Elements
+    const btnThemeToggle = document.getElementById("btn-theme-toggle");
+    
+    // Create floating citation tooltip element dynamically
+    const citationTooltip = document.createElement("div");
+    citationTooltip.className = "citation-tooltip glass";
+    document.body.appendChild(citationTooltip);
     
     // Config items
     const paramUseRerank = document.getElementById("param-use-reranking");
@@ -110,6 +150,30 @@ document.addEventListener("DOMContentLoaded", () => {
     paramUseRerank.addEventListener("change", (e) => {
         paramRerankMethod.disabled = !e.target.checked;
     });
+
+    // =============================================================================
+    // THEME TOGGLE EVENT HANDLER
+    // =============================================================================
+    btnThemeToggle.addEventListener("click", () => {
+        const body = document.body;
+        body.classList.toggle("light-theme");
+        
+        const icon = btnThemeToggle.querySelector(".theme-icon");
+        if (body.classList.contains("light-theme")) {
+            icon.className = "fa-solid fa-moon theme-icon";
+            localStorage.setItem("theme", "light");
+        } else {
+            icon.className = "fa-solid fa-sun theme-icon";
+            localStorage.setItem("theme", "dark");
+        }
+    });
+
+    // Load stored theme on load
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+        document.body.classList.add("light-theme");
+        btnThemeToggle.querySelector(".theme-icon").className = "fa-solid fa-moon theme-icon";
+    }
 
     // =============================================================================
     // TABS CONTROLLER
@@ -277,7 +341,8 @@ document.addEventListener("DOMContentLoaded", () => {
             use_reranking: paramUseRerank.checked,
             rerank_method: paramRerankMethod.value,
             llm_model: paramLlmModel.value,
-            temperature: parseFloat(paramTemp.value)
+            temperature: parseFloat(paramTemp.value),
+            system_prompt: promptSystemEditor ? promptSystemEditor.value : ""
         };
 
         try {
@@ -349,12 +414,42 @@ document.addEventListener("DOMContentLoaded", () => {
             const streamingBubble = document.getElementById("streaming-assistant-bubble");
             if (streamingBubble) streamingBubble.removeAttribute("id");
 
-            // Bind click events on the newly generated citation badges
+            // Bind click and hover events on the newly generated citation badges
             const badges = bubbleContentElement.querySelectorAll(".citation-badge");
             badges.forEach(badge => {
                 badge.addEventListener("click", () => {
                     const targetText = badge.getAttribute("data-cite-target");
                     highlightSourceCard(targetText);
+                });
+
+                badge.addEventListener("mouseenter", (e) => {
+                    const targetText = badge.getAttribute("data-cite-target");
+                    const chunkText = getChunkTextByCitation(targetText);
+                    if (chunkText) {
+                        const previewText = chunkText.length > 220 ? chunkText.substring(0, 220) + "..." : chunkText;
+                        citationTooltip.innerHTML = `<strong>Nguồn trích dẫn:</strong><br>${previewText}`;
+                        citationTooltip.style.display = "block";
+                        
+                        // Position the tooltip
+                        const rect = badge.getBoundingClientRect();
+                        citationTooltip.style.left = `${rect.left + window.scrollX}px`;
+                        citationTooltip.style.top = `${rect.bottom + window.scrollY + 6}px`;
+                        
+                        // Fade in
+                        void citationTooltip.offsetWidth; // force reflow
+                        citationTooltip.style.opacity = "1";
+                        citationTooltip.style.transform = "translateY(0)";
+                    }
+                });
+
+                badge.addEventListener("mouseleave", () => {
+                    citationTooltip.style.opacity = "0";
+                    citationTooltip.style.transform = "translateY(4px)";
+                    setTimeout(() => {
+                        if (citationTooltip.style.opacity === "0") {
+                            citationTooltip.style.display = "none";
+                        }
+                    }, 150);
                 });
             });
 
@@ -370,6 +465,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // INSPECTOR POPULATION
     // =============================================================================
     function updateInspector(data) {
+        // Save current chunks globally for citation preview tooltip
+        window.currentChunks = data.final_chunks || [];
+
+        if (data.constructed_user_prompt && promptUserViewer) {
+            promptUserViewer.textContent = data.constructed_user_prompt;
+        }
+
         // Show status panel
         statusPanelGrid.style.display = "grid";
         statusLatency.textContent = `${data.latency_ms} ms`;
@@ -391,7 +493,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             data.lexical.forEach((r, idx) => {
                 const source = r.metadata.source || "Nguồn tài liệu";
-                listLexical.appendChild(createInspectorCard(idx + 1, source, r.score.toFixed(2), r.content, "Score"));
+                const card = createInspectorCard(idx + 1, source, r.score.toFixed(2), r.content, "Score");
+                card.addEventListener("click", () => openDocumentViewer(source, r.content));
+                listLexical.appendChild(card);
             });
         }
 
@@ -401,7 +505,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             data.semantic.forEach((r, idx) => {
                 const source = r.metadata.source || "Nguồn tài liệu";
-                listSemantic.appendChild(createInspectorCard(idx + 1, source, r.score.toFixed(3), r.content, "Cosine"));
+                const card = createInspectorCard(idx + 1, source, r.score.toFixed(3), r.content, "Cosine");
+                card.addEventListener("click", () => openDocumentViewer(source, r.content));
+                listSemantic.appendChild(card);
             });
         }
 
@@ -424,6 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 badgeSpan.textContent = retSrc;
                 header.appendChild(badgeSpan);
                 
+                card.addEventListener("click", () => openDocumentViewer(source, r.content));
                 listReranked.appendChild(card);
             });
         }
@@ -445,12 +552,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 card.innerHTML = `
                     <div class="cohere-card-header">
                         <span>[Chunk ${idx}] Nguồn: <strong>${source}</strong> (Loại: ${docType})</span>
-                        <span class="cohere-card-score">ID: ${idx}</span>
+                        <span class="cohere-card-score">ID: ${idx} <i class="fa-solid fa-expand" style="margin-left:5px;"></i></span>
                     </div>
                     <div class="cohere-card-body">
                         <pre>${r.content}</pre>
                     </div>
                 `;
+                card.addEventListener("click", () => openDocumentViewer(source, r.content));
                 listSources.appendChild(card);
             });
         }
@@ -514,4 +622,121 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(`Could not find matching source card for citation: ${targetText}`);
         }
     }
+
+    // =============================================================================
+    // MODAL DOCUMENT VIEWER ACTIONS
+    // =============================================================================
+    modalClose.addEventListener("click", () => {
+        docModal.style.display = "none";
+    });
+
+    docModal.addEventListener("click", (e) => {
+        if (e.target === docModal) {
+            docModal.style.display = "none";
+        }
+    });
+
+    async function openDocumentViewer(filename, chunkContent) {
+        if (!filename) return;
+        
+        modalTitle.textContent = "Đang tải tài liệu...";
+        modalBodyMeta.textContent = `File: ${filename}`;
+        modalBody.innerHTML = `<div class="empty-state"><i class="fa-solid fa-spinner fa-spin icon-margin"></i> Đang đọc dữ liệu từ máy chủ...</div>`;
+        docModal.style.display = "flex";
+        
+        try {
+            const res = await fetch(`/api/document?filename=${encodeURIComponent(filename)}`);
+            if (!res.ok) {
+                throw new Error("Không thể tải tệp tin");
+            }
+            const data = await res.json();
+            
+            let docContent = data.content;
+            
+            // Try to highlight the chunk inside the document content
+            if (chunkContent) {
+                const cleanChunk = chunkContent.trim();
+                const idx = docContent.indexOf(cleanChunk);
+                if (idx !== -1) {
+                    docContent = docContent.substring(0, idx) + 
+                                 `\n\n<div class="highlight-text-segment">\n\n${cleanChunk}\n\n</div>\n\n` + 
+                                 docContent.substring(idx + cleanChunk.length);
+                } else {
+                    // Try matching the first 45 characters
+                    const prefix = cleanChunk.substring(0, Math.min(cleanChunk.length, 45));
+                    const pIdx = docContent.indexOf(prefix);
+                    if (pIdx !== -1) {
+                        const len = Math.min(cleanChunk.length, 120);
+                        docContent = docContent.substring(0, pIdx) + 
+                                     `\n\n<div class="highlight-text-segment">\n\n${docContent.substring(pIdx, pIdx + len)}...\n\n</div>\n\n` + 
+                                     docContent.substring(pIdx + len);
+                    }
+                }
+            }
+            
+            modalTitle.textContent = `Đọc tài liệu: ${filename}`;
+            if (typeof marked !== 'undefined') {
+                modalBody.innerHTML = marked.parse(docContent);
+            } else {
+                modalBody.innerHTML = `<pre>${docContent}</pre>`;
+            }
+            
+            // Scroll to the highlighted element in the modal
+            setTimeout(() => {
+                const highlightEl = modalBody.querySelector(".highlight-text-segment");
+                if (highlightEl) {
+                    highlightEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            }, 150);
+            
+        } catch (err) {
+            modalTitle.textContent = "Lỗi";
+            modalBody.innerHTML = `<div class="empty-state" style="color: var(--accent-start); border-color: var(--accent-start);">
+                <i class="fa-solid fa-triangle-exclamation icon-margin"></i> 
+                Lỗi tải tài liệu: ${err.message}
+            </div>`;
+        }
+    }
+
+    function getChunkTextByCitation(citeText) {
+        if (!window.currentChunks) return null;
+        const cleanCite = citeText.toLowerCase().trim();
+        
+        // 1. Try matching by metadata source filename
+        for (let chunk of window.currentChunks) {
+            const source = (chunk.metadata.source || "").toLowerCase();
+            if (source.includes(cleanCite) || cleanCite.includes(source)) {
+                return chunk.content;
+            }
+        }
+        
+        // 2. Try parsing name part of comma-separated citations e.g. "vnexpress, 2024"
+        const parts = cleanCite.split(",");
+        if (parts.length > 0) {
+            const namePart = parts[0].trim();
+            for (let chunk of window.currentChunks) {
+                const source = (chunk.metadata.source || "").toLowerCase();
+                if (source.includes(namePart) || namePart.includes(source)) {
+                    return chunk.content;
+                }
+            }
+        }
+
+        // 3. Fallback to numeric indexing
+        const matchIdx = cleanCite.match(/\d+/);
+        if (matchIdx) {
+            const idx = parseInt(matchIdx[0]);
+            if (window.currentChunks[idx]) {
+                return window.currentChunks[idx].content;
+            }
+        }
+        
+        // 4. Default to first chunk
+        if (window.currentChunks.length > 0) {
+            return window.currentChunks[0].content;
+        }
+        
+        return null;
+    }
 });
+

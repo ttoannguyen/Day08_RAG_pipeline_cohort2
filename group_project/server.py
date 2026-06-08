@@ -53,6 +53,7 @@ class ChatRequest(BaseModel):
     rerank_method: str = "cross_encoder"
     llm_model: str = "gpt-4o-mini"
     temperature: float = 0.3
+    system_prompt: str = ""
 
 
 @app.post("/api/chat")
@@ -64,19 +65,19 @@ async def chat_endpoint(req: ChatRequest):
     
     # 1. Execute Searches
     try:
-        dense_results = semantic_search(req.query, top_k=req.top_k * 2)
+        dense_results = semantic_search(req.query, top_k=req.top_k * 4)
     except Exception as e:
         print(f"[ERROR] Semantic search failed: {e}")
         dense_results = []
         
     try:
-        sparse_results = lexical_search(req.query, top_k=req.top_k * 2)
+        sparse_results = lexical_search(req.query, top_k=req.top_k * 4)
     except Exception as e:
         print(f"[ERROR] Lexical search failed: {e}")
         sparse_results = []
         
     # 2. RRF Fusion
-    merged_results = rerank_rrf([dense_results, sparse_results], top_k=req.top_k * 2)
+    merged_results = rerank_rrf([dense_results, sparse_results], top_k=req.top_k * 4)
     for item in merged_results:
         item["source"] = "hybrid"
         
@@ -118,6 +119,21 @@ async def chat_endpoint(req: ChatRequest):
             "source": r.get("source", "unknown")
         } for r in results_list]
 
+    # Construct prompts for LLM and expose in metadata
+    context_str = format_context(reordered_chunks)
+    default_system_prompt = """Answer the question in Vietnamese.
+
+If the question is a general greeting (e.g., "xin chào", "hello", "hi") or asking about your identity (e.g., "bạn là ai", "tên gì"), reply politely directly as the DrugLaw RAG Assistant.
+
+For all other questions concerning drug laws, legal documents, or celebrity news:
+- Only use information from the provided context.
+- For every statement of fact or claim, immediately insert a citation in brackets linking to the specific source (e.g., [Luật Phòng chống ma tuý 2021, Điều 3] or [VnExpress, 2024]).
+- If the information is not explicitly stated in the provided context, state 'Tôi không thể xác minh thông tin này từ nguồn hiện có' rather than guessing.
+- Structure your answer with clear paragraphs."""
+
+    system_prompt_to_use = req.system_prompt.strip() if req.system_prompt and req.system_prompt.strip() else default_system_prompt
+    user_message = f"Context:\n{context_str}\n\n---\n\nQuestion: {req.query}"
+
     # Pre-compiled metadata payload
     metadata = {
         "latency_ms": elapsed_time_ms,
@@ -127,7 +143,9 @@ async def chat_endpoint(req: ChatRequest):
         "semantic": serialize_results(dense_results[:5]),
         "merged": serialize_results(merged_results[:5]),
         "reranked": serialize_results(final_results),
-        "final_chunks": serialize_results(reordered_chunks)
+        "final_chunks": serialize_results(reordered_chunks),
+        "constructed_system_prompt": system_prompt_to_use,
+        "constructed_user_prompt": user_message
     }
 
     # Stream generator yielding SSE events
@@ -138,24 +156,11 @@ async def chat_endpoint(req: ChatRequest):
         from openai import OpenAI
         client = OpenAI()
         
-        context_str = format_context(reordered_chunks)
-        system_prompt = """Answer the question in Vietnamese.
-
-If the question is a general greeting (e.g., "xin chào", "hello", "hi") or asking about your identity (e.g., "bạn là ai", "tên gì"), reply politely directly as the DrugLaw RAG Assistant.
-
-For all other questions concerning drug laws, legal documents, or celebrity news:
-- Only use information from the provided context.
-- For every statement of fact or claim, immediately insert a citation in brackets linking to the specific source (e.g., [Luật Phòng chống ma tuý 2021, Điều 3] or [VnExpress, 2024]).
-- If the information is not explicitly stated in the provided context, state 'Tôi không thể xác minh thông tin này từ nguồn hiện có' rather than guessing.
-- Structure your answer with clear paragraphs."""
-
-        user_message = f"Context:\n{context_str}\n\n---\n\nQuestion: {req.query}"
-        
         try:
             response = client.chat.completions.create(
                 model=req.llm_model,
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": system_prompt_to_use},
                     {"role": "user", "content": user_message}
                 ],
                 temperature=req.temperature,
@@ -172,6 +177,22 @@ For all other questions concerning drug laws, legal documents, or celebrity news
             yield f"data: ❌ [ERROR] Lỗi gọi mô hình Generation: {e}\n\n"
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.get("/api/document")
+def get_document(filename: str):
+    safe_name = Path(filename).name
+    legal_path = project_root / "data" / "standardized" / "legal" / safe_name
+    news_path = project_root / "data" / "standardized" / "news" / safe_name
+    
+    if legal_path.exists():
+        content = legal_path.read_text(encoding="utf-8")
+        return {"content": content, "filename": safe_name, "type": "legal"}
+    elif news_path.exists():
+        content = news_path.read_text(encoding="utf-8")
+        return {"content": content, "filename": safe_name, "type": "news"}
+    else:
+        raise HTTPException(status_code=404, detail="Document not found")
 
 
 # Mount static directory to serve HTML/CSS/JS frontend

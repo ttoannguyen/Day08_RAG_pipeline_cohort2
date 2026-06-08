@@ -44,6 +44,19 @@ def rerank_cross_encoder(
     if not candidates:
         return []
 
+    # Simple query expansion for Vietnamese drug law terminology
+    query_processed = query
+    query_lower = query.lower()
+    if "hình thức cai nghiện" in query_lower:
+        query_processed += " biện pháp cai nghiện"
+    elif "biện pháp cai nghiện" in query_lower:
+        query_processed += " hình thức cai nghiện"
+
+    if "blhs" in query_lower:
+        query_processed += " bộ luật hình sự"
+    elif "bộ luật hình sự" in query_lower:
+        query_processed += " blhs"
+
     jina_api_key = os.getenv("JINA_API_KEY")
 
     # Kiểm tra xem Jina API Key có hợp lệ không (không phải placeholder jina_xxx)
@@ -56,18 +69,28 @@ def rerank_cross_encoder(
                 headers={"Authorization": f"Bearer {jina_api_key}"},
                 json={
                     "model": "jina-reranker-v2-base-multilingual",
-                    "query": query,
+                    "query": query_processed,
                     "documents": [c["content"] for c in candidates],
-                    "top_n": top_k
+                    "top_n": len(candidates)
                 },
                 timeout=15
             )
             if response.status_code == 200:
                 reranked = response.json()["results"]
-                return [
-                    {**candidates[r["index"]], "score": float(r["relevance_score"])}
-                    for r in reranked
-                ]
+                res_list = []
+                import re
+                articles = re.findall(r"điều\s+(\d+)", query_processed, re.IGNORECASE)
+                for r in reranked:
+                    cand = candidates[r["index"]].copy()
+                    score = float(r["relevance_score"])
+                    for art in articles:
+                        if re.search(rf"(?:^|\n|\s|\*\*)[Đđ]iều\s+{art}\.", cand["content"]):
+                            score += 0.25
+                            break
+                    cand["score"] = score
+                    res_list.append(cand)
+                res_list.sort(key=lambda x: x["score"], reverse=True)
+                return res_list[:top_k]
             else:
                 print(f"  [WARNING] Jina Reranker API returned status {response.status_code}. Falling back to OpenAI Embeddings.")
         except Exception as e:
@@ -80,7 +103,7 @@ def rerank_cross_encoder(
     client = OpenAI()
     try:
         # Nhúng query
-        q_emb = client.embeddings.create(input=[query], model="text-embedding-3-small").data[0].embedding
+        q_emb = client.embeddings.create(input=[query_processed], model="text-embedding-3-small").data[0].embedding
         
         # Nhúng các tài liệu ứng viên
         texts = [c["content"] for c in candidates]
@@ -95,8 +118,14 @@ def rerank_cross_encoder(
             return sum(x * y for x, y in zip(a, b)) / (mag_a * mag_b)
             
         results = []
+        import re
+        articles = re.findall(r"điều\s+(\d+)", query_processed, re.IGNORECASE)
         for cand, emb in zip(candidates, c_embs):
             score = cosine_sim(q_emb, emb)
+            for art in articles:
+                if re.search(rf"(?:^|\n|\s|\*\*)[Đđ]iều\s+{art}\.", cand["content"]):
+                    score += 0.25
+                    break
             cand_copy = cand.copy()
             cand_copy["score"] = float(score)
             results.append(cand_copy)
@@ -116,6 +145,7 @@ def rerank_mmr(
     candidates: list[dict],
     top_k: int = 5,
     lambda_param: float = 0.7,
+    query: str = ""
 ) -> list[dict]:
     """
     Maximal Marginal Relevance — chọn candidates vừa relevant vừa diverse.
@@ -163,9 +193,18 @@ def rerank_mmr(
         best_idx = None
         best_score = float('-inf')
 
+        import re
+        articles = re.findall(r"điều\s+(\d+)", query, re.IGNORECASE)
+
         for idx in remaining:
             # Relevance to query
             relevance = cosine_sim(query_embedding, candidates[idx]["embedding"])
+
+            # Boost if chunk contains the definition of the article in the query
+            for art in articles:
+                if re.search(rf"(?:^|\n|\s|\*\*)[Đđ]iều\s+{art}\.", candidates[idx]["content"]):
+                    relevance += 0.25
+                    break
 
             # Max similarity to already selected
             max_sim_to_selected = 0.0
@@ -254,7 +293,7 @@ def rerank(
             input=[query],
             model="text-embedding-3-small"
         ).data[0].embedding
-        return rerank_mmr(query_embedding, candidates, top_k)
+        return rerank_mmr(query_embedding, candidates, top_k, query=query)
     elif method == "rrf":
         # Nếu chỉ có 1 danh sách, xem nó là list of 1 list
         return rerank_rrf([candidates], top_k)
