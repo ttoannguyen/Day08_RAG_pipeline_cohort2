@@ -27,6 +27,7 @@ except AttributeError:
 STUDENT_DIR = Path(__file__).parent.parent
 load_dotenv(dotenv_path=STUDENT_DIR / ".env")
 load_dotenv(dotenv_path=STUDENT_DIR.parent / ".env")
+load_dotenv(dotenv_path=STUDENT_DIR.parent.parent / ".env")
 
 STANDARDIZED_DIR = STUDENT_DIR / "data" / "standardized"
 
