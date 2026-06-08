@@ -1,0 +1,20 @@
+# Cấu hình nhạy cảm
+.env
+
+# Thư mục làm việc nội bộ của Agent
+.local/
+
+# Cache & môi trường ảo Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Cơ sở dữ liệu Vector (ChromaDB tự sinh ra qua code)
+**/data/chroma_db/
+
+# File hệ thống
+.DS_Store
+Thumbs.db
