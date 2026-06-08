@@ -29,19 +29,29 @@ def setup_directory():
     print(f"✓ Thư mục đã sẵn sàng: {DATA_DIR}")
 
 
-# TODO: Tải file PDF/DOCX về DATA_DIR
-# Có thể tải thủ công hoặc viết script download nếu có direct link.
-#
-# Ví dụ nếu có direct link:
-#
-# import requests
-#
-# def download_file(url: str, filename: str):
-#     response = requests.get(url)
-#     filepath = DATA_DIR / filename
-#     filepath.write_bytes(response.content)
-#     print(f"✓ Đã tải: {filepath}")
+
+def check_existing_files():
+    """Kiểm tra các file pháp luật hiện có trong thư mục."""
+    valid_extensions = {".pdf", ".docx", ".doc"}
+    files = [f for f in DATA_DIR.iterdir()
+             if f.is_file() and f.suffix.lower() in valid_extensions]
+    
+    print(f"\nTìm thấy {len(files)} file pháp luật:")
+    for f in files:
+        size_kb = f.stat().st_size / 1024
+        print(f"  - {f.name} ({size_kb:.2f} KB)")
+        if f.stat().st_size <= 1024:
+            print(f"    ⚠ Cảnh báo: File {f.name} có kích thước quá nhỏ, có thể bị lỗi.")
+            
+    if len(files) >= 3:
+        print("\n✓ Đã đủ tối thiểu 3 file pháp luật theo yêu cầu!")
+        return True
+    else:
+        print(f"\n⚠ Chưa đủ số lượng file (Hiện có {len(files)}/3). Hãy bổ sung thêm.")
+        return False
 
 
 if __name__ == "__main__":
     setup_directory()
+    check_existing_files()
+
