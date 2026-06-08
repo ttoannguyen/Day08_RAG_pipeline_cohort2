@@ -1,0 +1,14 @@
+# Người mẫu Andrea Aybar (An Tây) bị khởi tố, tạm giam vì ma túy
+
+**Source:** https://thanhnien.vn/nguoi-mau-andrea-aybar-an-tay-bi-khoi-to-tam-giam-vi-ma-tuy-185241114.htm
+**Crawled:** 2026-06-08T16:04:15.140067
+
+---
+
+# Người mẫu Andrea Aybar (An Tây) bị khởi tố, tạm giam vì ma túy
+
+Cơ quan Cảnh sát điều tra Công an TP HCM đã ra quyết định khởi tố vụ án, khởi tố bị can và bắt tạm giam người mẫu Andrea Aybar (quốc tịch Tây Ban Nha, thường gọi là An Tây) cùng nhiều đồng phạm khác về tội tổ chức sử dụng trái phép chất ma túy và tàng trữ trái phép chất ma túy.
+
+Kết quả điều tra ban đầu xác định Andrea Aybar đã đứng ra mua ma túy và chuẩn bị dụng cụ để tổ chức cho bạn bè cùng sử dụng tại căn hộ của mình ở quận Bình Thạnh. Tại hiện trường, cơ quan công an thu giữ nhiều tang vật liên quan đến việc sử dụng ma túy.
+
+Andrea Aybar là người mẫu, diễn viên mang quốc tịch Tây Ban Nha nhưng sinh sống tại Việt Nam từ nhỏ. Cô được biết đến qua nhiều hoạt động nghệ thuật và là một KOL nổi tiếng trên mạng xã hội với hàng triệu người theo dõi. Việc cô bị bắt giam là lời cảnh tỉnh mạnh mẽ cho giới trẻ nghệ sĩ về lối sống sa ngã vào tệ nạn xã hội.

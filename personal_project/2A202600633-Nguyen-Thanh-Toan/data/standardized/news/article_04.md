@@ -1,0 +1,14 @@
+# Ca sĩ Chu Bin bị tạm giữ hình sự vì liên quan đến ma túy
+
+**Source:** https://dantri.com.vn/phap-luat/ca-si-chu-bin-bi-tam-giu-hinh-su-vi-lien-quan-den-ma-tuy-20240605.htm
+**Crawled:** 2026-06-08T16:04:15.140128
+
+---
+
+# Ca sĩ Chu Bin bị tạm giữ hình sự vì liên quan đến ma túy
+
+Công an quận 10, TP HCM xác nhận đang tạm giữ hình sự ca sĩ Chu Bin (tên thật là Chu Đăng Thanh, 39 tuổi) cùng một số đối tượng khác để làm rõ hành vi tổ chức sử dụng trái phép chất ma túy.
+
+Trước đó, lực lượng công an bất ngờ kiểm tra hành chính một căn hộ trên địa bàn quận 10 và bắt quả tang nhóm của ca sĩ Chu Bin đang tụ tập sử dụng ma túy tổng hợp. Qua test nhanh, ca sĩ Chu Bin và những người liên quan đều dương tính với chất cấm.
+
+Chu Bin được biết đến qua nhiều ca khúc nhạc trẻ ballad đình đám vào những năm 2010. Anh là ca sĩ thường biểu diễn tại các quán bar, vũ trường. Việc ca sĩ này vướng vào vòng lao lý vì chất cấm một lần nữa dấy lên hồi chuông cảnh báo về lối sống của một bộ phận nghệ sĩ hiện nay.
